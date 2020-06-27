@@ -18,7 +18,7 @@ struct memory_pool
 };
 
 
-memory_pool * mp_create(uint32_t size);
+struct memory_pool * mp_create(uint32_t size);
 
 void mp_destroy(struct memory_pool * const pool);
 
