@@ -1,6 +1,6 @@
 # Documentation for C Memory Pool {#mainpage}
 
-General Purpose Memory Pool
+## General Purpose Memory Pool
 
 Contributors:
 
@@ -12,4 +12,4 @@ Contributors:
 In order to use the memory pool, you will need one of the following compilers:
 
 + GCC
-+ MSBuild
++ MSBuils
