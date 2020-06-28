@@ -21,3 +21,17 @@ target_include_directories(
     memorypool 
     PUBLIC 
     include)
+
+if(DOCS)
+    find_package(Doxygen)
+    set(DOXYGEN_EXTRACT_ALL YES)
+    set(DOXYGEN_BUILTIN_STL_SUPPORT YES)
+
+    doxygen_add_docs(
+        docs
+        ${PROJECT_SOURCE_DIR}/docs/mainpage.md
+        ${PROJECT_SOURCE_DIR}/include/
+        WORKING_DIRECTORY
+        ${PROJECT_SOURCE_DIR}
+    )
+endif()
