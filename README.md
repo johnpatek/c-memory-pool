@@ -31,7 +31,7 @@ If you wish to build the documentation, doxygen is required. The only
 difference is the cmake command should be changed to the following:
 
 ```sh
-cmake .. -DOCS=ON
+cmake .. -DDOCS=ON
 ```
 
 And then you can proceed as normal. This has only been tested using
