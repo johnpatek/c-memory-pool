@@ -1,0 +1,12 @@
+language: c
+
+compiler:
+  - gcc
+
+before_script:
+  - mkdir build
+  - cd build
+  - cmake .. -DTEST=ON
+  - make
+
+script: ctest
