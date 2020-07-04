@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdio.h>
 
+uint8_t g_int_arr[0xFF];
+
 memory_pool * mp_create(uint32_t size)
 {
     memory_pool *mem_pool = (memory_pool *)malloc(sizeof(memory_pool));
@@ -42,17 +44,37 @@ void * mp_malloc(memory_pool * const pool, uint32_t size)
 	    printf("is able to create new block\n");
 	    
 	    // something's up here
-            memcpy((uint8_t*)pool->buf + size + sizeof(memory_block), &mem_header, sizeof(memory_block));
+            //memcpy((uint8_t*)pool->buf + size + sizeof(memory_block), &mem_header, sizeof(memory_block));
+	    memcpy((uint8_t*)pool->buf + size + sizeof(memory_block), g_int_arr, sizeof(g_int_arr));
+            uint8_t *bufr = (uint8_t*)pool->buf;
+            for(int i = 0; i < sizeof(g_int_arr); ++i)
+	    {
+                *bufr = 0;
+		++bufr;
+	    }
+
+            bufr = (uint8_t*)pool->buf;
+            for(int i = 0; i < sizeof(g_int_arr); ++i)
+	    {
+               printf("%d\n", *bufr);
+	    }
+
 	    // allocated block's 'next' should  point to the newly created block
             ((memory_block*)(pool->buf))->next = (struct memory_block *)((uint8_t*)pool->buf + size + sizeof(memory_block));
 	    
 	    // let's verify integrity of newly copied header
-	    blk = (memory_block*)blk->next;
-            uint8_t *ptr = (uint8_t*)blk;
+	    uint8_t *ptr = ((uint8_t*)pool->buf);
+	    uint8_t offset = size + sizeof(memory_block);
+            //uint8_t offset = 0;
 
-	    for(int i = 0; i < sizeof(memory_block); ++i)
+	    ptr += offset;
+	    printf("%16x\n", ptr);
+            //uint8_t *ptr = (uint8_t*)blk;
+
+	    for(int i = 0; i < (0xFF - offset); ++i)
 	    {
                 printf("%02x ", *ptr);
+		++ptr;
 	    }
 	    printf("\n");
 
