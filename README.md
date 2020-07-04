@@ -31,8 +31,16 @@ If you wish to build the documentation, doxygen is required. The only
 difference is the cmake command should be changed to the following:
 
 ```sh
-cmake .. -DOCS=ON
+cmake .. -DDOCS=ON
 ```
 
 And then you can proceed as normal. This has only been tested using
 Linux.
+
+### Building Unit Tests
+If you wish to build the unit tests, CTest is required. The cmake 
+command should be changed to the following:
+
+```sh
+cmake .. -DTEST=ON
+```
