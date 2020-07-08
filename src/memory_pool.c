@@ -30,16 +30,69 @@ struct memory_pool * mp_create(uint32_t size)
     return result;
 }
 
+void mp_destroy(struct memory_pool * const pool)
+{
+    if(pool != NULL)
+    {
+        if(pool->buf != NULL)
+        {
+            free(pool->buf);
+        }
+        free(pool);
+    }
+}
+
 void * mp_malloc(struct memory_pool * const pool, uint32_t size)
 {
-    int8_t error;
     void *result;
+    int error;
     struct memory_block *block;
     uint32_t required_size, remaining_size;
-    
-    error = (pool == NULL || pool->buf == NULL);
-    
+
     result = NULL;
+
+    // Make sure we are dealing with a valid pool and valid buffer
+    error = (pool == NULL) || (pool->buf == NULL);
+
+    // We should not allow 0 byte allocations
+    error = error || (size == 0);
+
+    block = (error)?NULL:pool->buf;
+
+    required_size = size + MEMORY_BLOCK_OVERHEAD;
+
+    // Keep looking until we find a suitable block
+    while(!error && (result == NULL) && (block != NULL))
+    {
+        // if the block is free and large enough, use it.
+        if(block->is_free && block->size > required_size)
+        {
+            pool->free_size -= block->size;
+            remaining_size = block->size - required_size;
+            block->is_free = 0;
+            result = block + MEMORY_BLOCK_OVERHEAD;
+        }
+
+        // if enough space is remaining, make another block.
+        if(remaining_size > MEMORY_BLOCK_OVERHEAD)
+        {
+            struct memory_block new_block,*new_block_ptr;
+            new_block.is_free = 0;
+            new_block.size = remaining_size - MEMORY_BLOCK_OVERHEAD;
+            new_block.prev = block;
+            new_block_ptr = block + required_size;
+            if(block->next != NULL)
+            {
+                new_block.next->prev = new_block_ptr;
+            }
+            new_block.next = block->next;
+            memcpy(new_block_ptr,&new_block,MEMORY_BLOCK_OVERHEAD);
+            block->size = required_size;
+            pool->free_size += new_block.size;
+        }
+
+        block = block->next;
+    }
 
     return result;
 }

@@ -20,7 +20,6 @@ static void mp_simple_destroy(struct memory_pool * const pool)
 int main(int argc, char ** argv)
 {
     struct memory_pool * pool;
-    
     void * buf;
 
     pool = mp_create(256);
