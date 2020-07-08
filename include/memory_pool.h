@@ -96,12 +96,5 @@ uint32_t mp_total_size(const struct memory_pool * const pool);
  */
 uint32_t mp_largest_block_size(const struct memory_pool * const pool);
 
-/**
- * @brief Get the size of the largest free block in the memory pool
- * @param pool pointer to a valid memory pool
- * @return The size of the largest block available in number of bytes.
- */
-void mp_mem_dump(struct memory_pool * pool);
-
 
 #endif

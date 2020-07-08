@@ -67,33 +67,77 @@ void * mp_malloc(struct memory_pool * const pool, uint32_t size)
         // if the block is free and large enough, use it.
         if(block->is_free && block->size > required_size)
         {
-            pool->free_size -= block->size;
-            remaining_size = block->size - required_size;
-            block->is_free = 0;
-            result = block + MEMORY_BLOCK_OVERHEAD;
+            // TODO: mark block, set result, and update pool info
         }
 
         // if enough space is remaining, make another block.
         if(remaining_size > MEMORY_BLOCK_OVERHEAD)
         {
-            struct memory_block new_block,*new_block_ptr;
-            new_block.is_free = 0;
-            new_block.size = remaining_size - MEMORY_BLOCK_OVERHEAD;
-            new_block.prev = block;
-            new_block_ptr = block + required_size;
-            if(block->next != NULL)
-            {
-                new_block.next->prev = new_block_ptr;
-            }
-            new_block.next = block->next;
-            memcpy(new_block_ptr,&new_block,MEMORY_BLOCK_OVERHEAD);
-            block->size = required_size;
-            block->next = new_block_ptr;
-            pool->free_size += new_block.size;
+            // TODO: Make a new block and update pool info
         }
 
         block = block->next;
     }
 
+    return result;
+}
+
+void * mp_calloc(struct memory_pool * const pool, uint32_t num, 
+    uint32_t size)
+{
+    void *result;
+    uint32_t alloc_size;
+
+    alloc_size = num * size;
+    
+    result = mp_malloc(pool, alloc_size);
+    
+    if(result != NULL)
+    {
+        memset(result,0,alloc_size);
+    }
+
+    return result;
+}
+
+void * mp_realloc(struct memory_pool * const pool, void * ptr, 
+    uint32_t size)
+{
+
+}
+
+void mp_free(struct memory_pool * const pool, void * ptr)
+{
+
+}
+
+uint32_t mp_free_size(const struct memory_pool * const pool)
+{
+    return (pool != NULL && pool->buf != NULL)?pool->free_size:0;
+}
+
+uint32_t mp_total_size(const struct memory_pool * const pool)
+{
+    return (pool != NULL && pool->buf != NULL)?pool->total_size:0;
+}
+
+uint32_t mp_largest_block_size(const struct memory_pool * const pool)
+{
+    uint32_t result;
+    struct memory_block * block;
+
+    result = 0;
+
+    block = (pool != NULL && pool->buf != NULL)?NULL:pool->buf;
+
+    while(block != NULL)
+    {
+        if(block->size > result)
+        {
+            result = block->size;
+        }
+        block = block->next;
+    }
+    
     return result;
 }
