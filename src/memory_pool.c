@@ -88,6 +88,7 @@ void * mp_malloc(struct memory_pool * const pool, uint32_t size)
             new_block.next = block->next;
             memcpy(new_block_ptr,&new_block,MEMORY_BLOCK_OVERHEAD);
             block->size = required_size;
+            block->next = new_block_ptr;
             pool->free_size += new_block.size;
         }
 
