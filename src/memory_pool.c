@@ -39,37 +39,37 @@ void * mp_malloc(memory_pool * const pool, uint32_t size)
 	  As long as there is nothing assigned to result and you have blocks left, keep iterating
 	 */
         while(result == NULL && block != NULL)
-	{
+	    {
             if(block->is_free && block->size >= required_size && pool->free_size > required_size)
-	    {	
-	        remaining_size = block->size - required_size;
+	        {	
+	            remaining_size = block->size - required_size;
                 block->is_free = 0;
-		block->size = size;
+		        block->size = size;
                 pool->free_size -= required_size;
-		result = block + sizeof(memory_block);
+		        result = block + sizeof(memory_block);
 		              
                 if(remaining_size > sizeof(memory_block))
-		{
+		        {
                     memory_block mem_header, *new_header;
 
                     mem_header.prev = block;
                     mem_header.next = block->next;
-		    if(block->next != NULL)
-		    {
+		            if(block->next != NULL)
+		            {
                         mem_header.next->prev = new_header;
-		    }
+		            }
 
                     mem_header.size = remaining_size - sizeof(memory_block);
                     mem_header.is_free = 1;
               	    new_header = block + required_size;   
-		    block->next = new_header;
-		    pool->free_size -= sizeof(memory_block);
+		            block->next = new_header;
+		            pool->free_size -= sizeof(memory_block);
 
                     memcpy(new_header, &mem_header, sizeof(memory_block));
-		}
+		        }
+	        }
+	        block = block->next; 
 	    }
-	    block = block->next; 
-	}
     }
     return result;
 }
