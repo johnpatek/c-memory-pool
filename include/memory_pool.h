@@ -5,8 +5,8 @@
 
 typedef struct mem_block
 {
-    struct memory_block * prev;
-    struct memory_block * next;
+    struct mem_block * prev;
+    struct mem_block * next;
     uint32_t size;
     uint8_t is_free;
 }memory_block;
