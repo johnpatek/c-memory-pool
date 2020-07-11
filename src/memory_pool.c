@@ -73,3 +73,74 @@ void * mp_malloc(memory_pool * const pool, uint32_t size)
     }
     return result;
 }
+
+void mp_destroy(memory_pool * const pool)
+{
+    if(pool != NULL)
+    {
+        if(pool->buf != NULL)
+        {
+            free(pool->buf);
+        }
+        free(pool);
+    }
+}
+
+void * mp_calloc(memory_pool * const pool, uint32_t num, 
+    uint32_t size)
+{
+    void *result;
+    uint32_t alloc_size;
+
+    alloc_size = num * size;
+    
+    result = mp_malloc(pool, alloc_size);
+    
+    if(result != NULL)
+    {
+        memset(result,0,alloc_size);
+    }
+
+    return result;
+}
+
+void * mp_realloc(memory_pool * const pool, void * ptr, 
+    uint32_t size)
+{
+
+}
+
+void mp_free(memory_pool * const pool, void * ptr)
+{
+
+}
+
+uint32_t mp_free_size(const memory_pool * const pool)
+{
+    return (pool != NULL && pool->buf != NULL)?pool->free_size:0;
+}
+
+uint32_t mp_total_size(const memory_pool * const pool)
+{
+    return (pool != NULL && pool->buf != NULL)?pool->total_size:0;
+}
+
+uint32_t mp_largest_block_size(const memory_pool * const pool)
+{
+    uint32_t result;
+    memory_block * block;
+
+    result = 0;
+
+    block = (pool != NULL && pool->buf != NULL)?NULL:pool->buf;
+
+    while(block != NULL)
+    {
+        if(block->size > result)
+        {
+            result = block->size;
+        }
+        block = block->next;
+    }
+    return result;
+}

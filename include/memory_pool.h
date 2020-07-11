@@ -73,7 +73,7 @@ void * mp_realloc(memory_pool * const pool, void * ptr,
  * @param pool pointer to a valid memory pool
  * @param ptr  pointer to the memory area to be deallocated
  */
-void mp_free(memory_pool * const pool, void * ptr);
+void mp_free( memory_pool * const pool, void * ptr);
 
 /**
  * @brief Get the amount of free space for a given pool
@@ -95,13 +95,6 @@ uint32_t mp_total_size(const memory_pool * const pool);
  * @return The size of the largest block available in number of bytes.
  */
 uint32_t mp_largest_block_size(const memory_pool * const pool);
-
-/**
- * @brief Get the size of the largest free block in the memory pool
- * @param pool pointer to a valid memory pool
- * @return The size of the largest block available in number of bytes.
- */
-void mp_mem_dump(memory_pool * pool);
 
 
 #endif

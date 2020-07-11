@@ -22,6 +22,12 @@ target_include_directories(
     PUBLIC 
     include)
 
+add_executable(memdump src/memory_dump.c)
+
+target_include_directories(memdump PRIVATE include)
+
+target_link_libraries(memdump memorypool)
+
 if(DOCS)
     # check if Doxygen is installed
     find_package(Doxygen)
