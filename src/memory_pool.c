@@ -39,37 +39,35 @@ void * mp_malloc(memory_pool * const pool, uint32_t size)
 	  As long as there is nothing assigned to result and you have blocks left, keep iterating
 	 */
         while(result == NULL && block != NULL)
-	    {
+	{
             if(block->is_free && block->size >= required_size && pool->free_size > required_size)
-	        {	
-	            remaining_size = block->size - required_size;
+	    {	
+	        remaining_size = block->size - required_size;
                 block->is_free = 0;
-		        block->size = size;
+                block->size = size;
                 pool->free_size -= required_size;
-		        result = block + sizeof(memory_block);
+                result = block + sizeof(memory_block);
 		              
                 if(remaining_size > sizeof(memory_block))
-		        {
+		{
                     memory_block mem_header, *new_header;
-
                     mem_header.prev = block;
                     mem_header.next = block->next;
-		            if(block->next != NULL)
-		            {
+		    if(block->next != NULL)
+		    {
                         mem_header.next->prev = new_header;
-		            }
+		    }
 
                     mem_header.size = remaining_size - sizeof(memory_block);
                     mem_header.is_free = 1;
               	    new_header = block + required_size;   
-		            block->next = new_header;
-		            pool->free_size -= sizeof(memory_block);
-
+                    block->next = new_header;
+                    pool->free_size -= sizeof(memory_block);
                     memcpy(new_header, &mem_header, sizeof(memory_block));
-		        }
-	        }
-	        block = block->next; 
+                }
 	    }
+            block = block->next; 
+	}
     }
     return result;
 }
@@ -112,7 +110,38 @@ void * mp_realloc(memory_pool * const pool, void * ptr,
 
 void mp_free(memory_pool * const pool, void * ptr)
 {
+    memory_block *current_header, *prev_header, *next_header;
+    current_header = (memory_block*)(ptr - sizeof(memory_block));
 
+    if(current_header->is_free)
+    {
+        return;
+    }
+
+    next_header = current_header->next;
+    prev_header = current_header->prev;
+    current_header->is_free = 1;
+    pool->free_size += current_header->size;
+ 
+    if(next_header->is_free)
+    {
+        pool->free_size += sizeof(memory_block);
+	
+        current_header->next = next_header->next;
+	current_header->size += sizeof(memory_block) + next_header->size;
+	if(prev_header->is_free)
+	{
+            prev_header->next = current_header->next;
+            prev_header->size += current_header->size + sizeof(memory_block);
+	    pool->free_size += sizeof(memory_block);
+	}
+    }
+    else if(prev_header->is_free)
+    {
+        prev_header->next = current_header->next;
+        pool->free_size += sizeof(memory_block);
+	prev_header->size += current_header->size + sizeof(memory_block);
+    }
 }
 
 uint32_t mp_free_size(const memory_pool * const pool)
