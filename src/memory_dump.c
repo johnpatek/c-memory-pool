@@ -1,4 +1,4 @@
-#include <memory_pool.h>
+#include "memory_pool.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -20,15 +20,29 @@ static void mp_simple_destroy(memory_pool * const pool)
 int main(int argc, char ** argv)
 {
     memory_pool * pool;
-    void * buf;
+    void * buf, * buf2, * buf3;
 
-    pool = mp_create(256);
+    pool = mp_create(356);
     
     memset((uint8_t*)pool->buf + sizeof(memory_block),0,pool->free_size);
    
     dump_pool(pool);
     
     buf = mp_malloc(pool,128);
+    buf2 = mp_malloc(pool,10);
+    buf3 = mp_malloc(pool,10);
+
+    dump_pool(pool);
+
+    mp_free(pool, buf);
+
+    dump_pool(pool);
+
+    mp_free(pool, buf2);
+
+    dump_pool(pool);
+
+    mp_free(pool, buf3);
     
     dump_pool(pool);
 

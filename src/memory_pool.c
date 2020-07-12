@@ -13,7 +13,7 @@ memory_pool * mp_create(uint32_t size)
     }
     mem_pool->free_size = size - sizeof(memory_block);
     mem_pool->total_size = size;
-    memory_block mem_header = {NULL, NULL, size, 1};
+    memory_block mem_header = {NULL, NULL, size - sizeof(memory_block), 1};
     mem_pool->buf = (void *)malloc(size);
     if(mem_pool->buf == NULL)
     {
@@ -42,11 +42,11 @@ void * mp_malloc(memory_pool * const pool, uint32_t size)
 	{
             if(block->is_free && block->size >= required_size && pool->free_size > required_size)
 	    {	
-	        remaining_size = block->size - required_size;
+	        remaining_size = pool->free_size - required_size;
                 block->is_free = 0;
                 block->size = size;
                 pool->free_size -= required_size;
-                result = block + sizeof(memory_block);
+                result = ((uint8_t*)block + sizeof(memory_block));
 		              
                 if(remaining_size > sizeof(memory_block))
 		{
@@ -57,7 +57,6 @@ void * mp_malloc(memory_pool * const pool, uint32_t size)
 		    {
                         mem_header.next->prev = new_header;
 		    }
-
                     mem_header.size = remaining_size - sizeof(memory_block);
                     mem_header.is_free = 1;
               	    new_header = block + required_size;   
@@ -111,7 +110,13 @@ void * mp_realloc(memory_pool * const pool, void * ptr,
 void mp_free(memory_pool * const pool, void * ptr)
 {
     memory_block *current_header, *prev_header, *next_header;
-    current_header = (memory_block*)(ptr - sizeof(memory_block));
+    current_header = (ptr - sizeof(memory_block));
+    
+    uint8_t error = (pool == NULL)||(pool->buf == NULL)||(ptr == NULL);
+    if(error)
+    {
+        return;
+    }
 
     if(current_header->is_free)
     {
@@ -122,25 +127,37 @@ void mp_free(memory_pool * const pool, void * ptr)
     prev_header = current_header->prev;
     current_header->is_free = 1;
     pool->free_size += current_header->size;
- 
-    if(next_header->is_free)
+
+    if(next_header != NULL)
     {
-        pool->free_size += sizeof(memory_block);
+        if(next_header->is_free)
+        {
+            pool->free_size += sizeof(memory_block);
 	
-        current_header->next = next_header->next;
-	current_header->size += sizeof(memory_block) + next_header->size;
-	if(prev_header->is_free)
-	{
-            prev_header->next = current_header->next;
-            prev_header->size += current_header->size + sizeof(memory_block);
-	    pool->free_size += sizeof(memory_block);
-	}
+            current_header->next = next_header->next;
+            current_header->size += sizeof(memory_block) + next_header->size;
+	    if(prev_header != NULL)
+	    {
+                if(prev_header->is_free)
+                {
+                    prev_header->next = current_header->next;
+                    prev_header->size += current_header->size + sizeof(memory_block);
+		    pool->free_size += sizeof(memory_block);
+                }
+	    }
+	    return;
+        }
     }
-    else if(prev_header->is_free)
+    
+    if(prev_header != NULL)
     {
-        prev_header->next = current_header->next;
-        pool->free_size += sizeof(memory_block);
-	prev_header->size += current_header->size + sizeof(memory_block);
+        if(prev_header->is_free)
+        {
+            prev_header->next = current_header->next;
+	    next_header->prev = prev_header;
+	    pool->free_size += sizeof(memory_block);
+	    prev_header->size += sizeof(memory_block);
+        }
     }
 }
 
