@@ -20,33 +20,21 @@ static void mp_simple_destroy(memory_pool * const pool)
 int main(int argc, char ** argv)
 {
     memory_pool * pool;
-    void * buf, * buf2, * buf3;
+    void *buf1, *buf2;
 
-    pool = mp_create(356);
+    pool = mp_create(1024);
     
     memset((uint8_t*)pool->buf + sizeof(memory_block),0,pool->free_size);
    
     dump_pool(pool);
     
-    buf = mp_malloc(pool,128);
-    buf2 = mp_malloc(pool,10);
-    buf3 = mp_malloc(pool,10);
+    buf1 = mp_malloc(pool,128);
+
+    buf2 = mp_malloc(pool,256);
 
     dump_pool(pool);
 
-    mp_free(pool, buf);
-
-    dump_pool(pool);
-
-    mp_free(pool, buf2);
-
-    dump_pool(pool);
-
-    mp_free(pool, buf3);
-    
-    dump_pool(pool);
-
-    mp_simple_destroy(pool);
+    mp_destroy(pool);
     
     return 0;
 }

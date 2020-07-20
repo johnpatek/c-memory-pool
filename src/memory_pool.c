@@ -3,6 +3,8 @@
 #include <string.h>
 #include <stdio.h>
 
+#define MEMORY_BLOCK_OVERHEAD sizeof(memory_block)
+
 memory_pool * mp_create(uint32_t size)
 {
     memory_pool *mem_pool = (memory_pool *)malloc(sizeof(memory_pool));
@@ -11,16 +13,16 @@ memory_pool * mp_create(uint32_t size)
         fputs("Out of memory!\n", stderr);
         return mem_pool;
     }
-    mem_pool->free_size = size - sizeof(memory_block);
+    mem_pool->free_size = size - MEMORY_BLOCK_OVERHEAD;
     mem_pool->total_size = size;
-    memory_block mem_header = {NULL, NULL, size - sizeof(memory_block), 1};
+    memory_block mem_header = {NULL, NULL, size - MEMORY_BLOCK_OVERHEAD, 1};
     mem_pool->buf = (void *)malloc(size);
     if(mem_pool->buf == NULL)
     {
         fputs("Out of memory!\n", stderr);
         return mem_pool;
     }
-    memcpy(mem_pool->buf, &mem_header, sizeof(memory_block));
+    memcpy(mem_pool->buf, &mem_header, MEMORY_BLOCK_OVERHEAD);
 
     return mem_pool;
 }
@@ -28,46 +30,43 @@ memory_pool * mp_create(uint32_t size)
 
 void * mp_malloc(memory_pool * const pool, uint32_t size)
 {
+    uint8_t error;
     void *result = NULL;
-    uint32_t required_size = size + sizeof(memory_block);
     uint32_t remaining_size; 
+    
+    error = (pool == NULL) || (pool->buf == NULL) || (size == 0);
+    
+    memory_block * block = (error)?NULL:(memory_block*)pool->buf;
 
-    if(pool != NULL && pool->buf != NULL)
+    // Keep iterating until a suitable block is found
+    while(!error && block != NULL && result == NULL)
     {
-        memory_block *block = (memory_block *)pool->buf;
-        /*
-	  As long as there is nothing assigned to result and you have blocks left, keep iterating
-	 */
-        while(result == NULL && block != NULL)
-	{
-            if(block->is_free && block->size >= required_size && pool->free_size > required_size)
-	    {	
-	        remaining_size = pool->free_size - required_size;
-                block->is_free = 0;
+        // Check block to see if it fits requirements
+        if(block->is_free && block->size >= size)
+        {
+            block->is_free = 0;
+            remaining_size = block->size - size;
+            if(remaining_size > MEMORY_BLOCK_OVERHEAD)
+            {
                 block->size = size;
-                pool->free_size -= required_size;
-                result = ((uint8_t*)block + sizeof(memory_block));
-		              
-                if(remaining_size > sizeof(memory_block))
-		{
-                    memory_block mem_header, *new_header;
-                    mem_header.prev = block;
-                    mem_header.next = block->next;
-		    if(block->next != NULL)
-		    {
-                        mem_header.next->prev = new_header;
-		    }
-                    mem_header.size = remaining_size - sizeof(memory_block);
-                    mem_header.is_free = 1;
-              	    new_header = block + required_size;   
-                    block->next = new_header;
-                    pool->free_size -= sizeof(memory_block);
-                    memcpy(new_header, &mem_header, sizeof(memory_block));
+                memory_block next_block, *next_ptr;
+                next_ptr = (memory_block*)(((uint8_t*)block) + block->size + MEMORY_BLOCK_OVERHEAD);
+                next_block.size = remaining_size - MEMORY_BLOCK_OVERHEAD;
+                next_block.is_free = 1;
+                next_block.prev = block;
+                next_block.next = block->next;
+                memcpy(next_ptr,&next_block,MEMORY_BLOCK_OVERHEAD);
+                if(next_ptr->next != NULL)
+                {
+                    next_ptr->next->prev = next_ptr;
                 }
-	    }
-            block = block->next; 
-	}
+                block->next = next_ptr;
+            }
+            result = (uint8_t*)block + MEMORY_BLOCK_OVERHEAD;
+        }
+        block = block->next;
     }
+
     return result;
 }
 
@@ -104,60 +103,53 @@ void * mp_calloc(memory_pool * const pool, uint32_t num,
 void * mp_realloc(memory_pool * const pool, void * ptr, 
     uint32_t size)
 {
-
+    return NULL;
 }
 
 void mp_free(memory_pool * const pool, void * ptr)
 {
     memory_block *current_header, *prev_header, *next_header;
-    current_header = (ptr - sizeof(memory_block));
-    
-    uint8_t error = (pool == NULL)||(pool->buf == NULL)||(ptr == NULL);
-    if(error)
-    {
-        return;
-    }
+    uint8_t error, merge_prev, merge_next;
+    uint32_t size_freed;
 
-    if(current_header->is_free)
-    {
-        return;
-    }
+    error = (pool == NULL) || (pool->buf == NULL) || (ptr ==  NULL);
 
-    next_header = current_header->next;
-    prev_header = current_header->prev;
-    current_header->is_free = 1;
-    pool->free_size += current_header->size;
+    current_header = (error)?NULL:(memory_block*)((uint8_t*)ptr - MEMORY_BLOCK_OVERHEAD);
 
-    if(next_header != NULL)
+    if(!error && current_header->is_free == 0)
     {
-        if(next_header->is_free)
+        prev_header = current_header->prev;
+        next_header = current_header->next;
+        
+        // Check if prev is a free block
+        merge_prev = (prev_header != NULL) && (prev_header->is_free == 1);
+        
+        // Check if next is a free block
+        merge_next = (next_header != NULL) && (next_header->is_free == 1);
+        
+        // 
+        if(merge_prev == 1 && merge_next == 1)
         {
-            pool->free_size += sizeof(memory_block);
-	
-            current_header->next = next_header->next;
-            current_header->size += sizeof(memory_block) + next_header->size;
-	    if(prev_header != NULL)
-	    {
-                if(prev_header->is_free)
-                {
-                    prev_header->next = current_header->next;
-                    prev_header->size += current_header->size + sizeof(memory_block);
-		    pool->free_size += sizeof(memory_block);
-                }
-	    }
-	    return;
+            current_header->is_free = 1;
+            size_freed = MEMORY_BLOCK_OVERHEAD + current_header->size + MEMORY_BLOCK_OVERHEAD;
         }
-    }
-    
-    if(prev_header != NULL)
-    {
-        if(prev_header->is_free)
+        else if(merge_prev == 1)
         {
-            prev_header->next = current_header->next;
-	    next_header->prev = prev_header;
-	    pool->free_size += sizeof(memory_block);
-	    prev_header->size += sizeof(memory_block);
+            current_header->is_free = 1;
+            size_freed = MEMORY_BLOCK_OVERHEAD + current_header->size;
         }
+        else if(merge_next == 1)
+        {
+            current_header->is_free = 1;
+            size_freed = current_header->size + MEMORY_BLOCK_OVERHEAD;
+        }
+        else
+        {
+            current_header->is_free = 1;
+            size_freed = current_header->size; 
+        }
+
+        pool->free_size += size_freed;
     }
 }
 
