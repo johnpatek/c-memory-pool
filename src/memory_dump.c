@@ -22,15 +22,17 @@ int main(int argc, char ** argv)
     memory_pool * pool;
     void *buf1, *buf2;
 
-    pool = mp_create(1024);
+    pool = mp_create(100);
     
     memset((uint8_t*)pool->buf + sizeof(memory_block),0,pool->free_size);
    
     dump_pool(pool);
     
-    buf1 = mp_malloc(pool,128);
+    buf1 = mp_malloc(pool,10);
 
-    buf2 = mp_malloc(pool,256);
+    dump_pool(pool);
+
+    mp_free(pool,buf1);
 
     dump_pool(pool);
 

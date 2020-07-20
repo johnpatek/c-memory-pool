@@ -61,7 +61,9 @@ void * mp_malloc(memory_pool * const pool, uint32_t size)
                     next_ptr->next->prev = next_ptr;
                 }
                 block->next = next_ptr;
+                pool->free_size -= MEMORY_BLOCK_OVERHEAD;
             }
+            pool->free_size -= block->size;
             result = (uint8_t*)block + MEMORY_BLOCK_OVERHEAD;
         }
         block = block->next;
