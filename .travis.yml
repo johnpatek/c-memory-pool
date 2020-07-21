@@ -6,7 +6,7 @@ compiler:
 before_script:
   - mkdir build
   - cd build
-  - cmake .. -DTEST=ON
+  - cmake .. # -DTEST=ON
   - make
 
-script: ctest
+# script: ctest
