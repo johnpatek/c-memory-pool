@@ -102,10 +102,107 @@ void * mp_calloc(memory_pool * const pool, uint32_t num,
     return result;
 }
 
+static void grow_block(
+    memory_pool * const pool,
+    memory_block * block,
+    void ** ptr, 
+    uint32_t size)
+{
+    void * current_ptr = (uint8_t*)block + MEMORY_BLOCK_OVERHEAD;
+
+    if(block->next != NULL 
+        && block->next->is_free == 1 
+        && ((block->size + block->next->size) >= size))
+    {
+        *ptr = current_ptr;
+        
+    }
+    else
+    {
+        *ptr = mp_malloc(pool, size);
+        if(ptr != NULL)
+        {
+            memcpy(*ptr,current_ptr,block->size);
+            mp_free(pool,current_ptr);
+        }
+    }
+}
+
+static void skrink_block(
+    memory_pool * const pool,
+    memory_block * block,
+    void ** ptr, 
+    uint32_t size)
+{
+    
+}
+
 void * mp_realloc(memory_pool * const pool, void * ptr, 
     uint32_t size)
 {
-    return NULL;
+    uint8_t error;
+    // Which action we take
+    uint8_t alloc, free, grow, leave, shrink;
+    void *result;
+    memory_block *block;
+
+    error = (pool == NULL) || (pool->buf == NULL);
+
+    alloc = (error == 0) 
+          && (ptr == NULL);
+
+    free = (error == 0) 
+         && (alloc == 0) 
+         && (size == 0);
+
+    block = ((error == 0) 
+          && (alloc == 0) 
+          && (free == 0))?(memory_block*)(
+              (uint8_t*)ptr - MEMORY_BLOCK_OVERHEAD):NULL;
+
+    grow = (error == 0) 
+         && (alloc == 0) 
+         && (free == 0) 
+         && (block->size < size);
+
+    shrink = (error == 0) 
+         && (alloc == 0) 
+         && (free == 0) 
+         && (block->size > size);
+
+    leave = (error == 0) 
+         && (alloc == 0) 
+         && (free == 0) 
+         && (block->size == size);
+
+    if(alloc == 1)
+    {
+        result = mp_malloc(pool,size);
+    }
+    else if(free == 1)
+    {
+        mp_free(pool,ptr);
+        result = NULL;
+    }
+    else if(grow == 1)
+    {
+        grow_block(pool,block,&result,size);    
+    }
+    else if(shrink == 1)
+    {
+        shrink_block(pool,block,&result,size);
+    }
+    else if(leave == 1)
+    {
+        result = ptr;
+    }
+    else
+    {
+        result = NULL;
+    }
+    
+
+    return result;
 }
 
 void mp_free(memory_pool * const pool, void * ptr)
@@ -133,17 +230,55 @@ void mp_free(memory_pool * const pool, void * ptr)
         if(merge_prev == 1 && merge_next == 1)
         {
             current_header->is_free = 1;
-            size_freed = MEMORY_BLOCK_OVERHEAD + current_header->size + MEMORY_BLOCK_OVERHEAD;
+            
+            size_freed = MEMORY_BLOCK_OVERHEAD 
+                       + current_header->size 
+                       + MEMORY_BLOCK_OVERHEAD;
+
+            prev_header->size += MEMORY_BLOCK_OVERHEAD 
+                              + current_header->size 
+                              + MEMORY_BLOCK_OVERHEAD 
+                              + next_header->size;
+            
+            if(next_header->next != NULL)
+            {
+                next_header->next->prev = prev_header;
+            }
+            
+            prev_header->next = next_header->next;
         }
         else if(merge_prev == 1)
         {
             current_header->is_free = 1;
-            size_freed = MEMORY_BLOCK_OVERHEAD + current_header->size;
+
+            size_freed = MEMORY_BLOCK_OVERHEAD 
+                       + current_header->size;
+
+            prev_header->size += MEMORY_BLOCK_OVERHEAD 
+                              + current_header->size;
+
+            if(next_header->next != NULL)
+            {
+                next_header->next->prev = prev_header;
+            }
+            
+            prev_header->next = current_header->next;
         }
         else if(merge_next == 1)
         {
             current_header->is_free = 1;
+
             size_freed = current_header->size + MEMORY_BLOCK_OVERHEAD;
+            
+            current_header->size += MEMORY_BLOCK_OVERHEAD 
+                                 + next_header->size;
+
+            if(next_header->next != NULL)
+            {
+                next_header->next->prev = current_header;
+            }
+
+            current_header->next = next_header->next;
         }
         else
         {
