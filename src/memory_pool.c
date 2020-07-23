@@ -205,6 +205,7 @@ void * mp_realloc(memory_pool * const pool, void * ptr,
     return result;
 }
 
+
 void mp_free(memory_pool * const pool, void * ptr)
 {
     memory_block *current_header, *prev_header, *next_header;
