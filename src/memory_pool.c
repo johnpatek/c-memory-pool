@@ -108,14 +108,27 @@ static void grow_block(
     void ** ptr, 
     uint32_t size)
 {
+    uint32_t remaining_size;
     void * current_ptr = (uint8_t*)block + MEMORY_BLOCK_OVERHEAD;
 
     if(block->next != NULL 
         && block->next->is_free == 1 
-        && ((block->size + block->next->size) >= size))
+        && ((block->size + MEMORY_BLOCK_OVERHEAD + block->next->size) 
+            >= size))
     {
         *ptr = current_ptr;
-        
+        remaining_size = (block->size 
+                       + MEMORY_BLOCK_OVERHEAD 
+                       + block->next->size) 
+                       - size;
+        if(remaining_size > MEMORY_BLOCK_OVERHEAD)
+        {
+            
+        }
+        else
+        {
+
+        }
     }
     else
     {
