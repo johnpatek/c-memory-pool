@@ -117,6 +117,11 @@ static void * shrink_block(
     memory_block * block, 
     uint32_t size);
 
+static void * move_block(
+    memory_pool * const pool, 
+    memory_block * block, 
+    uint32_t size);
+
 void * mp_realloc(memory_pool * const pool, void * ptr, 
     uint32_t size)
 {
@@ -159,11 +164,23 @@ static void * resize_block(
 
     if(block->size > size)
     {
-
+        result = shrink_block(pool,block,size);
     }
     else if(block->size < size)
     {
 
+        if((block->next != NULL) 
+            && (block->is_free == 1) 
+            && (block->size 
+                + MEMORY_BLOCK_OVERHEAD 
+                + block->next->size) >= size)
+        {
+            result = expand_block(pool,block,size);
+        }
+        else
+        {
+            result = move_block(pool,block,size);
+        }
     }
     else
     {
@@ -178,7 +195,68 @@ static void * expand_block(
     memory_block * block, 
     uint32_t size)
 {
-    return NULL;
+    void *ptr;
+    void *result;
+    uint32_t remaining_size;
+    memory_block * next_block;
+
+    ptr = (uint8_t*)block + MEMORY_BLOCK_OVERHEAD;
+
+    if((block->next != NULL) 
+        && (block->is_free == 1) 
+        && (block->size 
+            + MEMORY_BLOCK_OVERHEAD 
+            + block->next->size) >= size)
+    {
+        result = ptr;
+        remaining_size = (block->size 
+            + MEMORY_BLOCK_OVERHEAD 
+            + block->next->size) - size;
+        if(remaining_size > MEMORY_BLOCK_OVERHEAD)
+        {
+            next_block = (memory_block*)((uint8_t*)result + size);
+            next_block->size = remaining_size - MEMORY_BLOCK_OVERHEAD;
+            next_block->prev = block;
+            next_block->is_free = 1;
+            if(block->next != NULL)
+            {
+                block->next->prev = next_block;
+            }
+            next_block->next = block->next;
+            block->next = next_block;
+            block->size = size;
+        }
+    }
+    else
+    {
+        result = mp_malloc(pool,size);
+        if(result != NULL)
+        {
+            (void) memcpy(result,ptr,block->size);
+            mp_free(pool,ptr);
+        }
+    }
+    return result;
+}
+
+static void * move_block(
+    memory_pool * const pool, 
+    memory_block * block, 
+    uint32_t size)
+{
+    void * result;
+    void * ptr;
+    
+    result = mp_malloc(pool,size);
+    
+    if(result != NULL)
+    {
+        ptr = (uint8_t*)block + MEMORY_BLOCK_OVERHEAD;
+        (void) memcpy(result,ptr,block->size);
+        mp_free(pool,ptr);
+    }
+
+    return result;
 }
 
 static void * shrink_block(
@@ -186,7 +264,40 @@ static void * shrink_block(
     memory_block * block, 
     uint32_t size)
 {
-    return NULL;
+    void *result;
+    memory_block * next_block;
+    uint32_t remaining_size;
+
+    result = (uint8_t*)block + MEMORY_BLOCK_OVERHEAD;
+
+    if(block->next != NULL && block->next->is_free == 1)
+    {
+        remaining_size = block->size 
+                       + MEMORY_BLOCK_OVERHEAD 
+                       + block->next->size 
+                       - size;
+    }
+    else
+    {
+        remaining_size = block->size - size;
+    }
+
+    if(remaining_size > MEMORY_BLOCK_OVERHEAD)
+    {
+        next_block = (memory_block*)((uint8_t*)result + size);
+        next_block->size = remaining_size - MEMORY_BLOCK_OVERHEAD;
+        next_block->prev = block;
+        next_block->is_free = 1;
+        if(block->next != NULL)
+        {
+            block->next->prev = next_block;
+        }
+        next_block->next = block->next;
+        block->next = next_block;
+        block->size = size;
+    }
+
+    return result;
 }
 
 void mp_free(memory_pool * const pool, void * ptr)

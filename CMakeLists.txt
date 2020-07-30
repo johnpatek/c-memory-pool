@@ -5,7 +5,7 @@ project(c-memory-pool)
 if(WIN32)
     # Windows specific compiler flags
 else()
-    set(CMAKE_CXX_FLAGS  "-std=c++14")
+    set(CMAKE_CXX_FLAGS  "-std=c++14 -Wall")
 endif(WIN32)
 
 file(GLOB MEMORY_POOL_SOURCES
