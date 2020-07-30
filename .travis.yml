@@ -4,7 +4,6 @@ compiler:
   - gcc
 
 before_script:
-  - git checkout memory-pool-implementation
   - mkdir build
   - cd build
   - cmake .. -DTEST=ON
