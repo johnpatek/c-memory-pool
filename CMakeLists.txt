@@ -5,7 +5,7 @@ project(c-memory-pool)
 if(WIN32)
     # Windows specific compiler flags
 else()
-    set(CMAKE_CXX_FLAGS  "-std=c++14")
+    set(CMAKE_CXX_FLAGS  "-std=c++14 -Wall")
 endif(WIN32)
 
 file(GLOB MEMORY_POOL_SOURCES
@@ -21,6 +21,12 @@ target_include_directories(
     memorypool 
     PUBLIC 
     include)
+
+add_executable(memdump src/memory_dump.c)
+
+target_include_directories(memdump PRIVATE include)
+
+target_link_libraries(memdump memorypool)
 
 if(DOCS)
     # check if Doxygen is installed
