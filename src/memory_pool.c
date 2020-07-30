@@ -102,122 +102,92 @@ void * mp_calloc(memory_pool * const pool, uint32_t num,
     return result;
 }
 
-static void grow_block(
-    memory_pool * const pool,
-    memory_block * block,
-    void ** ptr, 
-    uint32_t size)
-{
-    uint32_t remaining_size;
-    void * current_ptr = (uint8_t*)block + MEMORY_BLOCK_OVERHEAD;
+static void * resize_block(
+    memory_pool * const pool, 
+    memory_block * block, 
+    uint32_t size);
 
-    if(block->next != NULL 
-        && block->next->is_free == 1 
-        && ((block->size + MEMORY_BLOCK_OVERHEAD + block->next->size) 
-            >= size))
-    {
-        *ptr = current_ptr;
-        remaining_size = (block->size 
-                       + MEMORY_BLOCK_OVERHEAD 
-                       + block->next->size) 
-                       - size;
-        if(remaining_size > MEMORY_BLOCK_OVERHEAD)
-        {
-            
-        }
-        else
-        {
+static void * expand_block(
+    memory_pool * const pool, 
+    memory_block * block, 
+    uint32_t size);
 
-        }
-    }
-    else
-    {
-        *ptr = mp_malloc(pool, size);
-        if(ptr != NULL)
-        {
-            memcpy(*ptr,current_ptr,block->size);
-            mp_free(pool,current_ptr);
-        }
-    }
-}
-
-static void skrink_block(
-    memory_pool * const pool,
-    memory_block * block,
-    void ** ptr, 
-    uint32_t size)
-{
-    
-}
+static void * shrink_block(
+    memory_pool * const pool, 
+    memory_block * block, 
+    uint32_t size);
 
 void * mp_realloc(memory_pool * const pool, void * ptr, 
     uint32_t size)
 {
     uint8_t error;
-    // Which action we take
-    uint8_t alloc, free, grow, leave, shrink;
-    void *result;
     memory_block *block;
+    void * result;
 
-    error = (pool == NULL) || (pool->buf == NULL);
+    error = (pool == NULL) 
+        || (pool->buf == NULL) 
+        || (size == 0);
 
-    alloc = (error == 0) 
-          && (ptr == NULL);
-
-    free = (error == 0) 
-         && (alloc == 0) 
-         && (size == 0);
-
-    block = ((error == 0) 
-          && (alloc == 0) 
-          && (free == 0))?(memory_block*)(
-              (uint8_t*)ptr - MEMORY_BLOCK_OVERHEAD):NULL;
-
-    grow = (error == 0) 
-         && (alloc == 0) 
-         && (free == 0) 
-         && (block->size < size);
-
-    shrink = (error == 0) 
-         && (alloc == 0) 
-         && (free == 0) 
-         && (block->size > size);
-
-    leave = (error == 0) 
-         && (alloc == 0) 
-         && (free == 0) 
-         && (block->size == size);
-
-    if(alloc == 1)
+    if(error == 0)
     {
-        result = mp_malloc(pool,size);
-    }
-    else if(free == 1)
-    {
-        mp_free(pool,ptr);
-        result = NULL;
-    }
-    else if(grow == 1)
-    {
-        grow_block(pool,block,&result,size);    
-    }
-    else if(shrink == 1)
-    {
-        shrink_block(pool,block,&result,size);
-    }
-    else if(leave == 1)
-    {
-        result = ptr;
+        block = (ptr == NULL)?NULL:(memory_block*)(
+            (uint8_t*)ptr - MEMORY_BLOCK_OVERHEAD);
+        if(block != NULL)
+        {
+            result = resize_block(pool,block,size);
+        }
+        else
+        {
+            result = mp_malloc(pool,size);
+        }
+        
     }
     else
     {
-        result = NULL;
+        result = ptr;
     }
     
-
     return result;
 }
 
+static void * resize_block(
+    memory_pool * const pool, 
+    memory_block * block, 
+    uint32_t size)
+{
+    void * result;
+
+    if(block->size > size)
+    {
+
+    }
+    else if(block->size < size)
+    {
+
+    }
+    else
+    {
+        result = (uint8_t*)block + MEMORY_BLOCK_OVERHEAD;
+    }
+    
+    return result;
+}
+
+static void * expand_block(
+    memory_pool * const pool, 
+    memory_block * block, 
+    uint32_t size)
+{
+    return NULL;
+}
+
+static void * shrink_block(
+    memory_pool * const pool, 
+    memory_block * block, 
+    uint32_t size)
+{
+    return NULL;
+}
 
 void mp_free(memory_pool * const pool, void * ptr)
 {
