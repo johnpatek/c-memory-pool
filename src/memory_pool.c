@@ -10,7 +10,6 @@ memory_pool * mp_create(uint32_t size)
     memory_pool *mem_pool = (memory_pool *)malloc(sizeof(memory_pool));
     if(mem_pool == NULL)
     {
-        fputs("Out of memory!\n", stderr);
         return mem_pool;
     }
     mem_pool->free_size = size - MEMORY_BLOCK_OVERHEAD;
@@ -19,7 +18,6 @@ memory_pool * mp_create(uint32_t size)
     mem_pool->buf = (void *)malloc(size);
     if(mem_pool->buf == NULL)
     {
-        fputs("Out of memory!\n", stderr);
         return mem_pool;
     }
     memcpy(mem_pool->buf, &mem_header, MEMORY_BLOCK_OVERHEAD);
