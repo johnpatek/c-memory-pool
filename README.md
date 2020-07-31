@@ -42,5 +42,5 @@ If you wish to build the unit tests, CTest is required. The cmake
 command should be changed to the following:
 
 ```sh
-cmake .. -DTEST=ON
+cmake .. -DTESTS=ON
 ```
