@@ -200,40 +200,27 @@ static void * expand_block(
 
     ptr = (uint8_t*)block + MEMORY_BLOCK_OVERHEAD;
 
-    if((block->next != NULL) 
-        && (block->is_free == 1) 
-        && (block->size 
-            + MEMORY_BLOCK_OVERHEAD 
-            + block->next->size) >= size)
+    pool->free_size += block->size;
+
+    result = ptr;
+    remaining_size = (block->size 
+        + MEMORY_BLOCK_OVERHEAD 
+        + block->next->size) - size;
+    if(remaining_size > MEMORY_BLOCK_OVERHEAD)
     {
-        result = ptr;
-        remaining_size = (block->size 
-            + MEMORY_BLOCK_OVERHEAD 
-            + block->next->size) - size;
-        if(remaining_size > MEMORY_BLOCK_OVERHEAD)
+        next_block = (memory_block*)((uint8_t*)result + size);
+        next_block->size = remaining_size - MEMORY_BLOCK_OVERHEAD;
+        next_block->prev = block;
+        next_block->is_free = 1;
+        if(block->next != NULL)
         {
-            next_block = (memory_block*)((uint8_t*)result + size);
-            next_block->size = remaining_size - MEMORY_BLOCK_OVERHEAD;
-            next_block->prev = block;
-            next_block->is_free = 1;
-            if(block->next != NULL)
-            {
-                block->next->prev = next_block;
-            }
-            next_block->next = block->next;
-            block->next = next_block;
-            block->size = size;
+            block->next->prev = next_block;
         }
+        next_block->next = block->next;
+        block->next = next_block;
+        block->size = size;
     }
-    else
-    {
-        result = mp_malloc(pool,size);
-        if(result != NULL)
-        {
-            (void) memcpy(result,ptr,block->size);
-            mp_free(pool,ptr);
-        }
-    }
+    
     return result;
 }
 
@@ -293,6 +280,7 @@ static void * shrink_block(
         next_block->next = block->next;
         block->next = next_block;
         block->size = size;
+        pool->free_size += next_block->size;
     }
 
     return result;

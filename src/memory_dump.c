@@ -22,17 +22,41 @@ int main(int argc, char ** argv)
     memory_pool * pool;
     void *buf1, *buf2;
 
-    pool = mp_create(100);
+    pool = mp_create(200);
     
     memset((uint8_t*)pool->buf + sizeof(memory_block),0,pool->free_size);
    
+    printf("************************DUMP %d*****************************\n",1);
+
     dump_pool(pool);
     
     buf1 = mp_malloc(pool,10);
 
+    printf("************************DUMP %d*****************************\n",2);
+
+    dump_pool(pool);
+
+    buf2 = mp_malloc(pool,10);
+
+    printf("************************DUMP %d*****************************\n",3);
+
+    dump_pool(pool);
+
+    buf1 = mp_realloc(pool,buf1,20);
+    
+    printf("************************DUMP %d*****************************\n",4);
+
     dump_pool(pool);
 
     mp_free(pool,buf1);
+
+    printf("************************DUMP %d*****************************\n",5);
+
+    dump_pool(pool);
+
+    mp_free(pool,buf2);
+
+    printf("************************DUMP %d*****************************\n",6);
 
     dump_pool(pool);
 
