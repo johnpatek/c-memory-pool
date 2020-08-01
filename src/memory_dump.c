@@ -11,57 +11,26 @@ static void dump_header(const memory_block * const block);
 
 static void dump_payload(const memory_block * const block);
 
-static void mp_simple_destroy(memory_pool * const pool)
-{
-    free(pool->buf);
-    free(pool);
-}
-
 int main(int argc, char ** argv)
 {
-    memory_pool * pool;
-    void *buf1, *buf2;
-
-    pool = mp_create(200);
+    uint8_t memory_buffer[100];
+    memory_pool pool;
+    void *buf;
     
-    memset((uint8_t*)pool->buf + sizeof(memory_block),0,pool->free_size);
-   
-    printf("************************DUMP %d*****************************\n",1);
-
-    dump_pool(pool);
+    memset(memory_buffer,0,sizeof(memory_buffer));
     
-    buf1 = mp_malloc(pool,10);
-
-    printf("************************DUMP %d*****************************\n",2);
-
-    dump_pool(pool);
-
-    buf2 = mp_malloc(pool,10);
-
-    printf("************************DUMP %d*****************************\n",3);
-
-    dump_pool(pool);
-
-    buf1 = mp_realloc(pool,buf1,20);
+    mp_aquire(&pool,memory_buffer,sizeof(memory_buffer));
     
-    printf("************************DUMP %d*****************************\n",4);
+    dump_pool(&pool);
 
-    dump_pool(pool);
+    buf = mp_malloc(&pool,10);
 
-    mp_free(pool,buf1);
+    dump_pool(&pool);
 
-    printf("************************DUMP %d*****************************\n",5);
+    mp_free(&pool,buf);
 
-    dump_pool(pool);
+    dump_pool(&pool);
 
-    mp_free(pool,buf2);
-
-    printf("************************DUMP %d*****************************\n",6);
-
-    dump_pool(pool);
-
-    mp_destroy(pool);
-    
     return 0;
 }
 

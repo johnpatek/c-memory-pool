@@ -166,9 +166,8 @@ static void * resize_block(
     }
     else if(block->size < size)
     {
-
         if((block->next != NULL) 
-            && (block->is_free == 1) 
+            && (block->next->is_free == 1) 
             && (block->size 
                 + MEMORY_BLOCK_OVERHEAD 
                 + block->next->size) >= size)
@@ -219,6 +218,7 @@ static void * expand_block(
         next_block->next = block->next;
         block->next = next_block;
         block->size = size;
+        pool->free_size -= block->size;
     }
     
     return result;
@@ -269,6 +269,7 @@ static void * shrink_block(
 
     if(remaining_size > MEMORY_BLOCK_OVERHEAD)
     {
+        pool->free_size += block->size - size;
         next_block = (memory_block*)((uint8_t*)result + size);
         next_block->size = remaining_size - MEMORY_BLOCK_OVERHEAD;
         next_block->prev = block;
@@ -280,7 +281,6 @@ static void * shrink_block(
         next_block->next = block->next;
         block->next = next_block;
         block->size = size;
-        pool->free_size += next_block->size;
     }
 
     return result;
@@ -399,4 +399,42 @@ uint32_t mp_largest_block_size(const memory_pool * const pool)
         block = block->next;
     }
     return result;
+}
+
+void mp_aquire(memory_pool * const pool, void * const buf, 
+    uint32_t len)
+{
+    memory_block * first;
+    if(pool != NULL 
+        && buf != NULL 
+        && len > MEMORY_BLOCK_OVERHEAD)
+    {
+        pool->buf = buf;
+        pool->total_size = len;
+        pool->free_size = len - MEMORY_BLOCK_OVERHEAD;
+        first = (memory_block*)((uint8_t*)pool->buf);
+        first->prev = NULL;
+        first->next = NULL;
+        first->is_free = 1;
+        first->size = pool->free_size;
+    }
+}
+
+void mp_release(memory_pool * const pool, void ** buf, 
+    uint32_t * const len)
+{
+    if(pool != NULL)
+    {
+        if(buf != NULL)
+        {
+            *buf = pool->buf;
+        }
+        pool->buf = NULL;
+        if(len != NULL)
+        {
+            *len = pool->total_size;
+        }
+        pool->total_size = 0;
+        pool->free_size = 0;
+    }
 }
