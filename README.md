@@ -1,5 +1,7 @@
 # C Memory Pool
 
+[![Build Status](https://travis-ci.org/johnpatek/c-memory-pool.svg?branch=master)](https://travis-ci.org/johnpatek/c-memory-pool)
+
 ## Build Instructions
 
 In order to build the memory pool library, the following must be
