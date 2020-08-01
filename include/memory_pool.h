@@ -97,4 +97,10 @@ uint32_t mp_total_size(const memory_pool * const pool);
 uint32_t mp_largest_block_size(const memory_pool * const pool);
 
 
+void mp_aquire(memory_pool * const pool, void * const buf, 
+    uint32_t len);
+
+void mp_release(memory_pool * const pool, void ** buf, 
+    uint32_t * const len);
+
 #endif

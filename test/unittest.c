@@ -100,11 +100,23 @@ static int mp_calloc_test()
     return 0;
 }
 
+#include <stdio.h>
+
 // Test realloc from NULL and from existing buffer
 static int mp_realloc_test()
 {
     int error;
-    error = 0;
+    memory_pool * pool;
+    void * buf;
+    uint32_t free_size;
+
+    pool = mp_create(1024);
+    buf = mp_malloc(pool,10);
+    free_size = mp_free_size(pool);
+    buf = mp_realloc(pool,buf,20);
+    error = (free_size != mp_free_size(pool) + 10);
+    buf = mp_realloc(pool,buf,10);
+    error = error || (free_size != mp_free_size(pool));
     return error;
 }
 
