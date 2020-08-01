@@ -44,3 +44,5 @@ command should be changed to the following:
 ```sh
 cmake .. -DTESTS=ON
 ```
+
+This has been tested on both Linux and Windows 10
