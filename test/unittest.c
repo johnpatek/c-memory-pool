@@ -131,6 +131,13 @@ static int mp_free_size_test()
     memory_pool * pool;
     void* buf;
     error = 0;
+    pool = mp_create(1024);
+    buf = mp_malloc(pool,100);
+    mp_free(pool,buf);
+    error = (pool == NULL) 
+        || (pool->buf == NULL) 
+        || (mp_free_size(pool) != (
+            mp_total_size(pool) - sizeof(memory_block)));
     return error;
 }
 

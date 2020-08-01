@@ -51,7 +51,7 @@ if(DOCS)
     endif (DOXYGEN_FOUND)
 endif()
 
-if(TEST)
+if(TESTS)
     enable_testing()
     add_subdirectory(test)
     include(CTest)
