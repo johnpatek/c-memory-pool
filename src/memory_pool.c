@@ -3,30 +3,30 @@
 #include <string.h>
 #include <stdio.h>
 
-#define MEMORY_BLOCK_OVERHEAD sizeof(memory_block)
+#define MEMORY_BLOCK_OVERHEAD sizeof(mp_block)
 
-memory_pool * mp_create(uint32_t size)
+mp_pool * mp_create(uint32_t size)
 {
-    memory_pool *mem_pool = (memory_pool *)malloc(sizeof(memory_pool));
-    if(mem_pool == NULL)
+    mp_pool *pool = (mp_pool *)malloc(sizeof(mp_pool));
+    if(pool == NULL)
     {
-        return mem_pool;
+        return pool;
     }
-    mem_pool->free_size = size - MEMORY_BLOCK_OVERHEAD;
-    mem_pool->total_size = size;
-    memory_block mem_header = {NULL, NULL, size - MEMORY_BLOCK_OVERHEAD, 1};
-    mem_pool->buf = (void *)malloc(size);
-    if(mem_pool->buf == NULL)
+    pool->free_size = size - MEMORY_BLOCK_OVERHEAD;
+    pool->total_size = size;
+    mp_block mem_header = {NULL, NULL, size - MEMORY_BLOCK_OVERHEAD, 1};
+    pool->buf = (void *)malloc(size);
+    if(pool->buf == NULL)
     {
-        return mem_pool;
+        return pool;
     }
-    memcpy(mem_pool->buf, &mem_header, MEMORY_BLOCK_OVERHEAD);
+    memcpy(pool->buf, &mem_header, MEMORY_BLOCK_OVERHEAD);
 
-    return mem_pool;
+    return pool;
 }
 
 
-void * mp_malloc(memory_pool * const pool, uint32_t size)
+void * mp_malloc(mp_pool * const pool, uint32_t size)
 {
     uint8_t error;
     void *result = NULL;
@@ -34,7 +34,7 @@ void * mp_malloc(memory_pool * const pool, uint32_t size)
     
     error = (pool == NULL) || (pool->buf == NULL) || (size == 0);
     
-    memory_block * block = (error)?NULL:(memory_block*)pool->buf;
+    mp_block * block = (error)?NULL:(mp_block*)pool->buf;
 
     // Keep iterating until a suitable block is found
     while(!error && block != NULL && result == NULL)
@@ -47,8 +47,8 @@ void * mp_malloc(memory_pool * const pool, uint32_t size)
             if(remaining_size > MEMORY_BLOCK_OVERHEAD)
             {
                 block->size = size;
-                memory_block next_block, *next_ptr;
-                next_ptr = (memory_block*)(((uint8_t*)block) + block->size + MEMORY_BLOCK_OVERHEAD);
+                mp_block next_block, *next_ptr;
+                next_ptr = (mp_block*)(((uint8_t*)block) + block->size + MEMORY_BLOCK_OVERHEAD);
                 next_block.size = remaining_size - MEMORY_BLOCK_OVERHEAD;
                 next_block.is_free = 1;
                 next_block.prev = block;
@@ -70,7 +70,7 @@ void * mp_malloc(memory_pool * const pool, uint32_t size)
     return result;
 }
 
-void mp_destroy(memory_pool * const pool)
+void mp_destroy(mp_pool * const pool)
 {
     if(pool != NULL)
     {
@@ -82,7 +82,7 @@ void mp_destroy(memory_pool * const pool)
     }
 }
 
-void * mp_calloc(memory_pool * const pool, uint32_t num, 
+void * mp_calloc(mp_pool * const pool, uint32_t num, 
     uint32_t size)
 {
     void *result;
@@ -101,30 +101,30 @@ void * mp_calloc(memory_pool * const pool, uint32_t num,
 }
 
 static void * resize_block(
-    memory_pool * const pool, 
-    memory_block * block, 
+    mp_pool * const pool, 
+    mp_block * block, 
     uint32_t size);
 
 static void * expand_block(
-    memory_pool * const pool, 
-    memory_block * block, 
+    mp_pool * const pool, 
+    mp_block * block, 
     uint32_t size);
 
 static void * shrink_block(
-    memory_pool * const pool, 
-    memory_block * block, 
+    mp_pool * const pool, 
+    mp_block * block, 
     uint32_t size);
 
 static void * move_block(
-    memory_pool * const pool, 
-    memory_block * block, 
+    mp_pool * const pool, 
+    mp_block * block, 
     uint32_t size);
 
-void * mp_realloc(memory_pool * const pool, void * ptr, 
+void * mp_realloc(mp_pool * const pool, void * ptr, 
     uint32_t size)
 {
     uint8_t error;
-    memory_block *block;
+    mp_block *block;
     void * result;
 
     error = (pool == NULL) 
@@ -133,7 +133,7 @@ void * mp_realloc(memory_pool * const pool, void * ptr,
 
     if(error == 0)
     {
-        block = (ptr == NULL)?NULL:(memory_block*)(
+        block = (ptr == NULL)?NULL:(mp_block*)(
             (uint8_t*)ptr - MEMORY_BLOCK_OVERHEAD);
         if(block != NULL)
         {
@@ -154,8 +154,8 @@ void * mp_realloc(memory_pool * const pool, void * ptr,
 }
 
 static void * resize_block(
-    memory_pool * const pool, 
-    memory_block * block, 
+    mp_pool * const pool, 
+    mp_block * block, 
     uint32_t size)
 {
     void * result;
@@ -188,14 +188,14 @@ static void * resize_block(
 }
 
 static void * expand_block(
-    memory_pool * const pool, 
-    memory_block * block, 
+    mp_pool * const pool, 
+    mp_block * block, 
     uint32_t size)
 {
     void *ptr;
     void *result;
     uint32_t remaining_size;
-    memory_block * next_block;
+    mp_block * next_block;
 
     ptr = (uint8_t*)block + MEMORY_BLOCK_OVERHEAD;
 
@@ -207,7 +207,7 @@ static void * expand_block(
         + block->next->size) - size;
     if(remaining_size > MEMORY_BLOCK_OVERHEAD)
     {
-        next_block = (memory_block*)((uint8_t*)result + size);
+        next_block = (mp_block*)((uint8_t*)result + size);
         next_block->size = remaining_size - MEMORY_BLOCK_OVERHEAD;
         next_block->prev = block;
         next_block->is_free = 1;
@@ -225,8 +225,8 @@ static void * expand_block(
 }
 
 static void * move_block(
-    memory_pool * const pool, 
-    memory_block * block, 
+    mp_pool * const pool, 
+    mp_block * block, 
     uint32_t size)
 {
     void * result;
@@ -245,12 +245,12 @@ static void * move_block(
 }
 
 static void * shrink_block(
-    memory_pool * const pool, 
-    memory_block * block, 
+    mp_pool * const pool, 
+    mp_block * block, 
     uint32_t size)
 {
     void *result;
-    memory_block * next_block;
+    mp_block * next_block;
     uint32_t remaining_size;
 
     result = (uint8_t*)block + MEMORY_BLOCK_OVERHEAD;
@@ -270,7 +270,7 @@ static void * shrink_block(
     if(remaining_size > MEMORY_BLOCK_OVERHEAD)
     {
         pool->free_size += block->size - size;
-        next_block = (memory_block*)((uint8_t*)result + size);
+        next_block = (mp_block*)((uint8_t*)result + size);
         next_block->size = remaining_size - MEMORY_BLOCK_OVERHEAD;
         next_block->prev = block;
         next_block->is_free = 1;
@@ -286,15 +286,15 @@ static void * shrink_block(
     return result;
 }
 
-void mp_free(memory_pool * const pool, void * ptr)
+void mp_free(mp_pool * const pool, void * ptr)
 {
-    memory_block *current_header, *prev_header, *next_header;
+    mp_block *current_header, *prev_header, *next_header;
     uint8_t error, merge_prev, merge_next;
     uint32_t size_freed;
 
     error = (pool == NULL) || (pool->buf == NULL) || (ptr ==  NULL);
 
-    current_header = (error)?NULL:(memory_block*)((uint8_t*)ptr - MEMORY_BLOCK_OVERHEAD);
+    current_header = (error)?NULL:(mp_block*)((uint8_t*)ptr - MEMORY_BLOCK_OVERHEAD);
 
     if(!error && current_header->is_free == 0)
     {
@@ -371,20 +371,20 @@ void mp_free(memory_pool * const pool, void * ptr)
     }
 }
 
-uint32_t mp_free_size(const memory_pool * const pool)
+uint32_t mp_free_size(const mp_pool * const pool)
 {
     return (pool != NULL && pool->buf != NULL)?pool->free_size:0;
 }
 
-uint32_t mp_total_size(const memory_pool * const pool)
+uint32_t mp_total_size(const mp_pool * const pool)
 {
     return (pool != NULL && pool->buf != NULL)?pool->total_size:0;
 }
 
-uint32_t mp_largest_block_size(const memory_pool * const pool)
+uint32_t mp_largest_block_size(const mp_pool * const pool)
 {
     uint32_t result;
-    memory_block * block;
+    mp_block * block;
 
     result = 0;
 
@@ -401,10 +401,10 @@ uint32_t mp_largest_block_size(const memory_pool * const pool)
     return result;
 }
 
-void mp_aquire(memory_pool * const pool, void * const buf, 
+void mp_aquire(mp_pool * const pool, void * const buf, 
     uint32_t len)
 {
-    memory_block * first;
+    mp_block * first;
     if(pool != NULL 
         && buf != NULL 
         && len > MEMORY_BLOCK_OVERHEAD)
@@ -412,7 +412,7 @@ void mp_aquire(memory_pool * const pool, void * const buf,
         pool->buf = buf;
         pool->total_size = len;
         pool->free_size = len - MEMORY_BLOCK_OVERHEAD;
-        first = (memory_block*)((uint8_t*)pool->buf);
+        first = (mp_block*)((uint8_t*)pool->buf);
         first->prev = NULL;
         first->next = NULL;
         first->is_free = 1;
@@ -420,7 +420,7 @@ void mp_aquire(memory_pool * const pool, void * const buf,
     }
 }
 
-void mp_release(memory_pool * const pool, void ** buf, 
+void mp_release(mp_pool * const pool, void ** buf, 
     uint32_t * const len)
 {
     if(pool != NULL)

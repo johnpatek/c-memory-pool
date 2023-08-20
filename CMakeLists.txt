@@ -28,7 +28,7 @@ target_include_directories(memdump PRIVATE include)
 
 target_link_libraries(memdump memorypool)
 
-if(DOCS)
+if(MP_DOCS)
     # check if Doxygen is installed
     find_package(Doxygen)
     if (DOXYGEN_FOUND)
@@ -51,7 +51,7 @@ if(DOCS)
     endif (DOXYGEN_FOUND)
 endif()
 
-if(TESTS)
+if(MP_TESTS)
     enable_testing()
     add_subdirectory(test)
     include(CTest)

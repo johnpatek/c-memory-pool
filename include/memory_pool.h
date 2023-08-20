@@ -3,20 +3,20 @@
 /** @file */
 #include <stdint.h>
 
-typedef struct mem_block
+typedef struct mp_block
 {
-    struct mem_block * prev;
-    struct mem_block * next;
+    struct mp_block * prev;
+    struct mp_block * next;
     uint32_t size;
     uint8_t is_free;
-}memory_block;
+}mp_block;
 
-typedef struct mem_pool
+typedef struct mp_pool
 {
     void * buf;
     uint32_t free_size;
     uint32_t total_size;
-}memory_pool;
+}mp_pool;
 
 /**
  * @brief Create a new memory pool
@@ -24,13 +24,13 @@ typedef struct mem_pool
  * @return A newly created memory pool for managing the block of
  * memory 
  */
-memory_pool * mp_create(uint32_t size);
+mp_pool * mp_create(uint32_t size);
 
 /**
  * @brief Destroy the memory pool and free the managed memory
  * @param pool A pointer to the pool object to be destroyed
  */
-void mp_destroy(memory_pool * const pool);
+void mp_destroy(mp_pool * const pool);
 
 /**
  * @brief Allocate a block of uninitialized memory from the pool.
@@ -40,7 +40,7 @@ void mp_destroy(memory_pool * const pool);
  * NULL if the size exceeds either the amount of free space or the
  * size of the largest free block.
  */
-void * mp_malloc(memory_pool * const pool, uint32_t size);
+void * mp_malloc(mp_pool * const pool, uint32_t size);
 
 /**
  * @brief Allocates memory for an array of num objects of size and 
@@ -52,7 +52,7 @@ void * mp_malloc(memory_pool * const pool, uint32_t size);
  * NULL if the size exceeds either the amount of free space or the
  * size of the largest free block. 
  */
-void * mp_calloc(memory_pool * const pool, uint32_t num, 
+void * mp_calloc(mp_pool * const pool, uint32_t num, 
     uint32_t size);
 
 /**
@@ -65,7 +65,7 @@ void * mp_calloc(memory_pool * const pool, uint32_t num,
  * NULL if the block cannot be resized and a new block of sufficient
  * size cannot be found.
  */
-void * mp_realloc(memory_pool * const pool, void * ptr, 
+void * mp_realloc(mp_pool * const pool, void * ptr, 
     uint32_t size);
 
 /**
@@ -73,34 +73,34 @@ void * mp_realloc(memory_pool * const pool, void * ptr,
  * @param pool pointer to a valid memory pool
  * @param ptr  pointer to the memory area to be deallocated
  */
-void mp_free( memory_pool * const pool, void * ptr);
+void mp_free( mp_pool * const pool, void * ptr);
 
 /**
  * @brief Get the amount of free space for a given pool
  * @param pool pointer to a valid memory pool
  * @return The free space available in number of bytes.
  */
-uint32_t mp_free_size(const memory_pool * const pool);
+uint32_t mp_free_size(const mp_pool * const pool);
 
 /**
  * @brief Get the total size of the memory managed by the pool
  * @param pool pointer to a valid memory pool
  * @return The total pool size in number of bytes.
  */
-uint32_t mp_total_size(const memory_pool * const pool);
+uint32_t mp_total_size(const mp_pool * const pool);
 
 /**
  * @brief Get the size of the largest free block in the memory pool
  * @param pool pointer to a valid memory pool
  * @return The size of the largest block available in number of bytes.
  */
-uint32_t mp_largest_block_size(const memory_pool * const pool);
+uint32_t mp_largest_block_size(const mp_pool * const pool);
 
 
-void mp_aquire(memory_pool * const pool, void * const buf, 
+void mp_aquire(mp_pool * const pool, void * const buf, 
     uint32_t len);
 
-void mp_release(memory_pool * const pool, void ** buf, 
+void mp_release(mp_pool * const pool, void ** buf, 
     uint32_t * const len);
 
 #endif

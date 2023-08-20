@@ -1,4 +1,4 @@
-#include "memory_pool.h"
+#include "mp_pool.h"
 #include <stdlib.h>
 
 static int mp_create_test();
@@ -51,7 +51,7 @@ int main(const int argc, const char ** argv)
 static int mp_create_test()
 {
     int error;
-    memory_pool * pool;
+    mp_pool * pool;
     pool = mp_create(1024);
     error = (pool == NULL || pool->buf == NULL);
     mp_destroy(pool);
@@ -61,7 +61,7 @@ static int mp_create_test()
 // Just don't segfault. Might want to do a detailed check with Valgrind.
 static int mp_destroy_test()
 {
-    memory_pool * pool;
+    mp_pool * pool;
     pool = mp_create(1024);
     mp_destroy(pool);
     return 0;
@@ -71,7 +71,7 @@ static int mp_destroy_test()
 static int mp_malloc_test()
 {
     int error;
-    memory_pool * pool;
+    mp_pool * pool;
     void *buf;
     pool = mp_create(1024);
     buf = mp_malloc(pool,100);
@@ -84,7 +84,7 @@ static int mp_malloc_test()
 static int mp_calloc_test()
 {
     int error,offset;
-    memory_pool * pool;
+    mp_pool * pool;
     void *buf;
     pool = mp_create(1024);
     buf = mp_calloc(pool,100,sizeof(int));
@@ -106,7 +106,7 @@ static int mp_calloc_test()
 static int mp_realloc_test()
 {
     int error;
-    memory_pool * pool;
+    mp_pool * pool;
     void * buf;
     uint32_t free_size;
 
@@ -124,7 +124,7 @@ static int mp_realloc_test()
 static int mp_free_test()
 {
     int error, initial_free_size;
-    memory_pool * pool;
+    mp_pool * pool;
     void *buf;
     pool = mp_create(1024);
     initial_free_size = mp_free_size(pool);
@@ -140,7 +140,7 @@ static int mp_free_test()
 static int mp_free_size_test()
 {
     int error, initial_free_size,delta;
-    memory_pool * pool;
+    mp_pool * pool;
     void* buf;
     error = 0;
     pool = mp_create(1024);
@@ -149,7 +149,7 @@ static int mp_free_size_test()
     error = (pool == NULL) 
         || (pool->buf == NULL) 
         || (mp_free_size(pool) != (
-            mp_total_size(pool) - sizeof(memory_block)));
+            mp_total_size(pool) - sizeof(mp_block)));
     return error;
 }
 
@@ -157,7 +157,7 @@ static int mp_free_size_test()
 static int mp_total_size_test()
 {
     int error;
-    memory_pool * pool;
+    mp_pool * pool;
     pool = mp_create(1024);
     error = (mp_total_size(pool) != 1024);
     mp_destroy(pool);
@@ -168,7 +168,7 @@ static int mp_total_size_test()
 static int mp_largest_block_size_test()
 {
     int error, expected_size;
-    memory_pool * pool;
+    mp_pool * pool;
     void *buf1,*buf2;
     pool = mp_create(1024);
     buf1 = mp_malloc(pool,10);
